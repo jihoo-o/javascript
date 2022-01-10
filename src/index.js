@@ -1,63 +1,68 @@
 import "./styles.css";
 
 document.getElementById("app").innerHTML = `
-<h1>Lazy load</h1>
-<div id='root'>
-</div>
+<section id="banner">
+  <ul class="slider">
+	  <li class="slide current" style='background-image: url(https://cdn2.thecatapi.com/images/JR48AEqts.jpg)'>
+	  <li class="slide" style='background-image: url(https://cdn2.thecatapi.com/images/zyW4wflo3.jpg)'/>
+	  <li class="slide" style='background-image: url(https://cdn2.thecatapi.com/images/JQMGbOP3q.jpg)'/>
+	  <li class="slide" style='background-image: url(https://cdn2.thecatapi.com/images/dkN5wGUxC.jpg)'/>
+	  <li class="slide" style='background-image: url(https://cdn2.thecatapi.com/images/TdxQ2VvJK.jpg)'/>
+  </ul>
+  <button class="arrow prev-btn"></button>
+  <button class="arrow next-btn"></button>
+  <nav id="navigation">
+	  <ul class="bullets">
+		  <li class="bullet current" data-index="0"></li>
+		  <li class="bullet" data-index="1"></li>
+		  <li class="bullet" data-index="2"></li>
+		  <li class="bullet" data-index="3"></li>
+		  <li class="bullet" data-index="4"></li>
+	  </ul>
+  </nav>
+</section>
 `;
 
-/**
- * Lazy load using Intersection Observer API
- * ref: https://imagekit.io/blog/lazy-loading-images-complete-guide/#using-intersection-observer-api-to-trigger-image-loads
- *
- * Example 1
- *
- */
-const $target = document.querySelector("#root");
-const observer = new IntersectionObserver((entries) => {
-    entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-            const image = entry.target;
-            image.src = image.dataset.src;
-            image.classList.remove("lazy");
-            observer.unobserve(image);
-        }
-    });
-});
-let data = [];
+let currentIdx = 0;
+const CURRENT = "current";
+const $slideList = document.querySelectorAll(".slide");
+const $bulletList = document.querySelectorAll(".bullet");
+const $buttons = document.querySelectorAll(".arrow");
+const $bullets = document.querySelector(".bullets");
 
-const init = async () => {
-    try {
-        const res = await fetch(
-            `https://oivhcpn8r9.execute-api.ap-northeast-2.amazonaws.com/dev/api/cats/search?q=cat`
-        );
-        if (!res.ok) {
-            throw new Error("error");
-        }
-        setState(await res.json());
-    } catch (e) {
-        init();
+const changeCurrentSlide = (n) => {
+    n = parseInt(n);
+    if (n < 0) {
+        n = $slideList.length - 1;
+    }
+    if (n > $slideList.length - 1) {
+        n = 0;
+    }
+    $slideList[currentIdx].classList.remove(CURRENT);
+    $bulletList[currentIdx].classList.remove(CURRENT);
+    $slideList[n].classList.add(CURRENT);
+    $bulletList[n].classList.add(CURRENT);
+    currentIdx = n;
+};
+
+const handleBulletClick = (e) => {
+    if (e.target.classList.contains("bullet")) {
+        changeCurrentSlide(e.target.dataset.index);
     }
 };
 
-const setState = ({ data: nextData }) => {
-    data = nextData;
-    render();
+const handleButtonClick = (e) => {
+    if (e.target.classList.contains("prev-btn")) {
+        changeCurrentSlide(currentIdx - 1);
+        return;
+    }
+    if (e.target.classList.contains("next-btn")) {
+        changeCurrentSlide(currentIdx + 1);
+        return;
+    }
 };
 
-const render = () => {
-    /**
-     * To prevent preloading the image,
-     * instead of 'src', use another attribute like 'data-src'.
-     */
-    $target.innerHTML = data
-        .map((img) => `<img data-src='${img.url}' class='lazy'>`)
-        .join("");
-
-    const images = document.querySelectorAll(".lazy");
-    images.forEach((image) => {
-        observer.observe(image);
-    });
-};
-
-init();
+$bullets.addEventListener("click", handleBulletClick);
+$buttons.forEach((button) =>
+    button.addEventListener("click", handleButtonClick)
+);
