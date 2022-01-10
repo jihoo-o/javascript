@@ -1,0 +1,29 @@
+body {
+    font-family: sans-serif;
+    box-sizing: border-box;
+    height: 300vh;
+}
+
+/* #scrollArea {
+    width: 100%;
+    height: 150vh;
+    background: grey;
+} */
+
+.box {
+    height: 250px;
+    width: 100%;
+    color: white;
+}
+
+.box:nth-child(odd) {
+    background: black;
+}
+
+.box:nth-child(even) {
+    background: grey;
+}
+
+.sentinel {
+    /* display: contents; */
+}
