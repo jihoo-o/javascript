@@ -1,98 +1,63 @@
 import "./styles.css";
 
-/**
- * Infinite scroll using Insetersction Observer API
- *
- * Example 1
- * One target: class='sentinel'
- *
- */
 document.getElementById("app").innerHTML = `
-<h1>Infinite scroll</h1>
-<div class='scroller'>
-    <div class='box'>A</div>
-    <div class='box'>B</div>
-    <div class='box'>C</div>
-    <div class='box'>D</div>
-    <div class='box'>E</div>
-    <div class='box'>F</div>
-    <div class='sentinel'></div>
-    <div class='box'>G</div>
-    <div class='box'>H</div>
-    <div class='box'>I</div>
-    <div class='box'>J</div>
-    <div class='box'>K</div>
+<h1>Lazy load</h1>
+<div id='root'>
 </div>
 `;
 
-const options = {
-    root: null,
-    rootMargin: "0px",
-    /**
-     * If the treshold is an array, The callback is invoked by each threshold.
-     */
-    // threshold: [0.1, 0.3, 0.5]
-    threshold: 1.0
-};
-
-const loadItems = (n) => {
-    for (var i = 0; i < n; i++) {
-        const newItem = document.createElement("div");
-        newItem.classList.add("box");
-        newItem.innerText = "new box";
-        scroller.appendChild(newItem);
-    }
-};
-
+/**
+ * Lazy load using Intersection Observer API
+ * ref: https://imagekit.io/blog/lazy-loading-images-complete-guide/#using-intersection-observer-api-to-trigger-image-loads
+ *
+ * Example 1
+ *
+ */
+const $target = document.querySelector("#root");
 const observer = new IntersectionObserver((entries) => {
     entries.forEach((entry) => {
         if (entry.isIntersecting) {
-            loadItems(10);
-            scroller.appendChild(target);
-            loadItems(5);
+            const image = entry.target;
+            image.src = image.dataset.src;
+            image.classList.remove("lazy");
+            observer.unobserve(image);
         }
     });
-}, options);
+});
+let data = [];
 
-const scroller = document.querySelector(".scroller");
-const target = document.querySelector(".sentinel");
-observer.observe(target);
+const init = async () => {
+    try {
+        const res = await fetch(
+            `https://oivhcpn8r9.execute-api.ap-northeast-2.amazonaws.com/dev/api/cats/search?q=cat`
+        );
+        if (!res.ok) {
+            throw new Error("error");
+        }
+        setState(await res.json());
+    } catch (e) {
+        init();
+    }
+};
 
-/**
- * Example 2
- * Multiple targets: class='box'
- *
- */
+const setState = ({ data: nextData }) => {
+    data = nextData;
+    render();
+};
 
-// document.getElementById("app").innerHTML = `
-// <h1>Infinite scroll</h1>
-// <div class='box'>A</div>
-// <div class='box'>B</div>
-// <div class='box'>C</div>
-// <div class='box'>D</div>
-// <div class='box'>E</div>
-// <div class='box'>F</div>
-// <div class='box'>G</div>
-// <div class='box'>H</div>
-// <div class='box'>I</div>
-// <div class='box'>J</div>
-// <div class='box'>K</div>
-// `;
-// const observer = new IntersectionObserver((entries, observer) => {
-//     entries.forEach((entry) => {
-//         if (entry.isIntersecting) { // Detecting the current section
-//             console.log(entry);
-//         }
-//     });
-// }, options);
-// const targets = document.querySelectorAll(".box");
-// targets.forEach((target) => observe(target));
+const render = () => {
+    /**
+     * To prevent preloading the image,
+     * instead of 'src', use another attribute like 'data-src'.
+     */
+    $target.innerHTML = data
+        .map((img) => `<img data-src='${img.url}' class='lazy'>`)
+        .join("");
 
-// --------------Expected--------------
-/**
- * Example 3
- * SEO friendly
- * ref: https://developers.google.com/search/blog/2014/02/infinite-scroll-search-friendly
- *
- *
- */
+    const images = document.querySelectorAll(".lazy");
+    images.forEach((image) => {
+        observer.observe(image);
+    });
+};
+
+init();
